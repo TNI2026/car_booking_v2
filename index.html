@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบจองคิวตรวจเช็ครถยนต์ - สถาบันเทคโนโลยีไทย-ญี่ปุ่น</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'TNS', 'Kanit', sans-serif; }
+    body { background-color: #f4f6f9; padding: 20px; margin: 0; }
+    .card { max-width: 500px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    h2 { color: #1a365d; text-align: center; margin-bottom: 5px; font-size: 20px; }
+    p.subtitle { text-align: center; color: #666; font-size: 13px; margin-bottom: 20px; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; font-size: 14px; }
+    input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+    button { width: 100%; padding: 12px; background: #0056b3; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+    button:hover { background: #003d80; }
+    button:disabled { background: #cccccc; cursor: not-allowed; }
+    .note { font-size: 12px; color: #e53e3e; margin-top: 5px; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>จองคิวตรวจเช็ครถยนต์</h2>
+  <p class="subtitle">สาขายานยนต์ คณะวิศวกรรมศาสตร์ สถาบันเทคโนโลยีไทย-ญี่ปุ่น</p>
+  
+  <form id="bookingForm">
+    <div class="form-group">
+      <label>วันที่ต้องการนัดหมาย *</label>
+      <input type="date" id="date" required>
+      <div class="note">* รับเฉพาะ พุธ, พฤหัสบดี, ศุกร์ (จำกัดวันละ 5 คัน)</div>
+    </div>
+
+    <div class="form-group">
+      <label>เวลาที่ต้องการนัดหมาย *</label>
+      <select id="time" required>
+        <option value="">-- เลือกรอบเวลา --</option>
+        <option value="08:30">08:30 น.</option>
+        <option value="09:30">09:30 น.</option>
+        <option value="10:30">10:30 น.</option>
+        <option value="11:30">11:30 น.</option>
+        <option value="14:30">14:30 น.</option>
+        <option value="15:30">15:30 น.</option>
+        <option value="16:30">16:30 น.</option>
+        <option value="17:30">17:30 น.</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>ชื่อ-นามสกุล *</label>
+      <input type="text" id="name" placeholder="นายสมชาย ใจดี" required>
+    </div>
+
+    <div class="form-group">
+      <label>เบอร์โทรศัพท์ *</label>
+      <input type="tel" id="phone" placeholder="0812345678" required>
+    </div>
+
+    <div class="form-group">
+      <label>ยี่ห้อ/รุ่นรถยนต์ *</label>
+      <input type="text" id="car" placeholder="เช่น Toyota Camry" required>
+    </div>
+
+    <div class="form-group">
+      <label>ทะเบียนรถ</label>
+      <input type="text" id="plate" placeholder="เช่น กข 1234 กรุงเทพ">
+    </div>
+
+    <div class="form-group">
+      <label>ระดับน้ำที่ท่วม</label>
+      <input type="text" id="flood" placeholder="เช่น เสมอพื้นรถ / ครึ่งล้อ">
+    </div>
+
+    <div class="form-group">
+      <label>ประกันภัย</label>
+      <input type="text" id="insurance" placeholder="เช่น ชั้น 1 วิริยะ">
+    </div>
+
+    <div class="form-group">
+      <label>อีเมล (รับใบยืนยันการจอง)</label>
+      <input type="email" id="email" placeholder="example@email.com">
+    </div>
+
+    <div class="form-group">
+      <label>หมายเหตุเพิ่มเติม</label>
+      <textarea id="note" rows="2"></textarea>
+    </div>
+
+    <button type="submit" id="btnSubmit">ยืนยันการจองคิว</button>
+  </form>
+</div>
+
+<script>
+  // **วาง Web App URL ของคุณที่นี่**
+  const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwn0biRrnJg8oObcy_XBQWmpOatEE7RWn7tTBufFtFQH_tKnTNqKBZoVrEIDDua26YV/exec';
+
+  const form = document.getElementById('bookingForm');
+  const btnSubmit = document.getElementById('btnSubmit');
+
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    btnSubmit.disabled = true;
+    btnSubmit.innerText = 'กำลังส่งข้อมูล...';
+
+    const payload = {
+      date: document.getElementById('date').value,
+      time: document.getElementById('time').value,
+      name: document.getElementById('name').value,
+      phone: document.getElementById('phone').value,
+      car: document.getElementById('car').value,
+      plate: document.getElementById('plate').value,
+      flood: document.getElementById('flood').value,
+      insurance: document.getElementById('insurance').value,
+      email: document.getElementById('email').value,
+      note: document.getElementById('note').value
+    };
+
+    try {
+      const response = await fetch(WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+
+      if (result.ok) {
+        alert('🎉 จองคิวสำเร็จ!\nเลขที่การจองของคุณคือ: ' + result.id);
+        form.reset();
+      } else {
+        if (result.error === 'closed') {
+          alert('❌ ขออภัย วันหรือเวลาดังกล่าวไม่ได้เปิดให้บริการ\n(เปิด พุธ, ศุกร์ 08:30-13:00 / 14:30-19:00 และ พฤหัสบดี 08:30-19:00)');
+        } else if (result.error === 'full') {
+          alert('❌ ขออภัย คิวสำหรับวันที่เลือกเต็มแล้ว (จำกัดวันละ 5 คัน)');
+        } else if (result.error === 'taken') {
+          alert('❌ ขออภัย ช่วงเวลานี้ถูกจองไปแล้ว กรุณาเลือกช่วงเวลาอื่น');
+        } else {
+          alert('❌ เกิดข้อผิดพลาด ไม่สามารถจองคิวได้');
+        }
+      }
+    } catch (err) {
+      alert('❌ เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
+      console.error(err);
+    } finally {
+      btnSubmit.disabled = false;
+      btnSubmit.innerText = 'ยืนยันการจองคิว';
+    }
+  });
+</script>
+
+</body>
+</html>
