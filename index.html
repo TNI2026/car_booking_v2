@@ -29,21 +29,13 @@
     <div class="form-group">
       <label>วันที่ต้องการนัดหมาย *</label>
       <input type="date" id="date" required>
-      <div class="note">* รับเฉพาะ พุธ, พฤหัสบดี, ศุกร์ (จำกัดวันละ 5 คัน)</div>
+      <div class="note">* เปิดเฉพาะ พุธ, พฤหัสบดี, ศุกร์ (จำกัดวันละ 5 คัน / ระยะเวลาบริการ 1 ชม./คัน)</div>
     </div>
 
     <div class="form-group">
       <label>เวลาที่ต้องการนัดหมาย *</label>
-      <select id="time" required>
-        <option value="">-- เลือกรอบเวลา --</option>
-        <option value="08:30">08:30 น.</option>
-        <option value="09:30">09:30 น.</option>
-        <option value="10:30">10:30 น.</option>
-        <option value="11:30">11:30 น.</option>
-        <option value="14:30">14:30 น.</option>
-        <option value="15:30">15:30 น.</option>
-        <option value="16:30">16:30 น.</option>
-        <option value="17:30">17:30 น.</option>
+      <select id="time" required disabled>
+        <option value="">-- กรุณาเลือกวันที่ก่อน --</option>
       </select>
     </div>
 
@@ -92,11 +84,70 @@
 </div>
 
 <script>
-  // **วาง Web App URL ของคุณที่นี่**
   const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwn0biRrnJg8oObcy_XBQWmpOatEE7RWn7tTBufFtFQH_tKnTNqKBZoVrEIDDua26YV/exec';
 
+  const dateInput = document.getElementById('date');
+  const timeSelect = document.getElementById('time');
   const form = document.getElementById('bookingForm');
   const btnSubmit = document.getElementById('btnSubmit');
+
+  // ตารางตัวเลือกเวลารอบละ 1 ชั่วโมง
+  const TIME_SLOTS = {
+    // พุธ (Day 3) และ ศุกร์ (Day 5): เช้า 08:30-13:00 / บ่าย 14:30-19:00
+    wed_fri: [
+      { val: '08:30', text: '08:30 - 09:30 น.' },
+      { val: '09:30', text: '09:30 - 10:30 น.' },
+      { val: '10:30', text: '10:30 - 11:30 น.' },
+      { val: '11:30', text: '11:30 - 12:30 น.' },
+      { val: '14:30', text: '14:30 - 15:30 น.' },
+      { val: '15:30', text: '15:30 - 16:30 น.' },
+      { val: '16:30', text: '16:30 - 17:30 น.' },
+      { val: '17:30', text: '17:30 - 18:30 น.' },
+      { val: '18:00', text: '18:00 - 19:00 น. (คิวสุดท้าย)' }
+    ],
+    // พฤหัสบดี (Day 4): เปิดยาว 08:30-19:00
+    thu: [
+      { val: '08:30', text: '08:30 - 09:30 น.' },
+      { val: '09:30', text: '09:30 - 10:30 น.' },
+      { val: '10:30', text: '10:30 - 11:30 น.' },
+      { val: '11:30', text: '11:30 - 12:30 น.' },
+      { val: '12:30', text: '12:30 - 13:30 น.' },
+      { val: '13:30', text: '13:30 - 14:30 น.' },
+      { val: '14:30', text: '14:30 - 15:30 น.' },
+      { val: '15:30', text: '15:30 - 16:30 น.' },
+      { val: '16:30', text: '16:30 - 17:30 น.' },
+      { val: '17:30', text: '17:30 - 18:30 น.' },
+      { val: '18:00', text: '18:00 - 19:00 น. (คิวสุดท้าย)' }
+    ]
+  };
+
+  // เปลี่ยนตัวเลือกเวลาอัตโนมัติเมื่อเลือกวันที่
+  dateInput.addEventListener('change', function() {
+    const selectedDate = new Date(this.value);
+    const day = selectedDate.getDay(); // 0=อาทิตย์ ... 3=พุธ, 4=พฤหัส, 5=ศุกร์
+
+    timeSelect.innerHTML = '<option value="">-- เลือกรอบเวลา --</option>';
+
+    if (day === 3 || day === 5) {
+      // พุธ หรือ ศุกร์
+      timeSelect.disabled = false;
+      TIME_SLOTS.wed_fri.forEach(slot => {
+        timeSelect.innerHTML += `<option value="${slot.val}">${slot.text}</option>`;
+      });
+    } else if (day === 4) {
+      // พฤหัสบดี
+      timeSelect.disabled = false;
+      TIME_SLOTS.thu.forEach(slot => {
+        timeSelect.innerHTML += `<option value="${slot.val}">${slot.text}</option>`;
+      });
+    } else {
+      // วันอื่นๆ ปิดบริการ
+      timeSelect.disabled = true;
+      alert('❌ สาขาปิดทำการในวันดังกล่าว (เปิดบริการเฉพาะวันพุธ, พฤหัสบดี และศุกร์)');
+      this.value = '';
+      timeSelect.innerHTML = '<option value="">-- กรุณาเลือกวันที่ก่อน --</option>';
+    }
+  });
 
   form.addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -129,9 +180,11 @@
       if (result.ok) {
         alert('🎉 จองคิวสำเร็จ!\nเลขที่การจองของคุณคือ: ' + result.id);
         form.reset();
+        timeSelect.disabled = true;
+        timeSelect.innerHTML = '<option value="">-- กรุณาเลือกวันที่ก่อน --</option>';
       } else {
         if (result.error === 'closed') {
-          alert('❌ ขออภัย วันหรือเวลาดังกล่าวไม่ได้เปิดให้บริการ\n(เปิด พุธ, ศุกร์ 08:30-13:00 / 14:30-19:00 และ พฤหัสบดี 08:30-19:00)');
+          alert('❌ ขออภัย วันหรือเวลาดังกล่าวไม่ได้เปิดให้บริการ');
         } else if (result.error === 'full') {
           alert('❌ ขออภัย คิวสำหรับวันที่เลือกเต็มแล้ว (จำกัดวันละ 5 คัน)');
         } else if (result.error === 'taken') {
